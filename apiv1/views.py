@@ -6,14 +6,16 @@ from django.http import JsonResponse
 from django.core.cache import cache
 
 import pandas as pd
+from django_pandas.io import read_frame
 from geopy import distance
 from requests_html import HTMLSession
 
-# Create your views here.
+from .models import Station
 
-df_stations = pd.read_csv(Path(__file__).parent / "data/stations.csv")
+# df_stations = pd.read_csv(Path(__file__).parent / "data/stations.csv")
 
 def stations(request):
+    df_stations = read_frame(Station.objects.all())
     resp = dict(
         hits=df_stations.shape[0],
         results=df_stations.to_dict("records")
@@ -55,6 +57,7 @@ class Election:
             self._response400(f"station_id is invalid: {station_ids}")
 
 
+        df_stations = read_frame(Station.objects.all())
         candidate_stations = df_stations.query("station_id in @station_ids")
         halfway_coords = candidate_stations['lat'].mean(), candidate_stations['lon'].mean()
         ds = []
@@ -62,7 +65,7 @@ class Election:
             d = distance.distance(halfway_coords, coords.tolist())
             ds.append(d)
 
-        stations = df_stations[['station_id', 'station_name', 'lat', 'lon']]
+        stations = df_stations[['station_id', 'station_name', 'lat', 'lon', 'num_shop', 'top10_avarage_score']]
         stations['distance'] = ds
         results = []
         for _, row in stations.sort_values('distance').head(10).iterrows():
