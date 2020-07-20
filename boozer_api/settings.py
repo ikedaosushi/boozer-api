@@ -39,7 +39,8 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'corsheaders',
     'django_extensions',
-    'apiv1'
+    'apiv1',
+    'django_cron'
 ]
 
 MIDDLEWARE = [
@@ -133,3 +134,11 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/3.0/howto/static-files/
 
 STATIC_URL = '/static/'
+
+# Django extensions
+IPYTHON_KERNEL_DISPLAY_NAME = "Boozer Shell"
+
+# Django cron
+CRON_CLASSES = [
+    'apiv1.cron.TabelogCrawlCron'
+]

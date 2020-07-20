@@ -1,9 +1,9 @@
 from pathlib import Path
 import re
 
-from django.shortcuts import render
 from django.http import JsonResponse
 from django.core.cache import cache
+from rest_framework import serializers
 
 import pandas as pd
 from django_pandas.io import read_frame
@@ -14,11 +14,20 @@ from .models import Station
 
 # df_stations = pd.read_csv(Path(__file__).parent / "data/stations.csv")
 
+# class StationMasterSerializer(serializers.ModelSerializer):
+#     class Meta:
+#         model = Station
+#         include = ["id", "station_id", "station_name", "lat", "lon"]
+
+# class StationMasterListSerializer(serializers.ListSerializer):
+#     child = StationMasterSerializer
+
 def stations(request):
     df_stations = read_frame(Station.objects.all())
+    df_stations = df_stations.sort_values("num_shop", ascending=False)
     resp = dict(
         hits=df_stations.shape[0],
-        results=df_stations.to_dict("records")
+        results=df_stations[["id", "station_id", "station_name", "lat", "lon"]].to_dict("records")
     )
     return JsonResponse(resp, safe=False, json_dumps_params={'ensure_ascii': False})
 
@@ -66,6 +75,7 @@ class Election:
             ds.append(d)
 
         stations = df_stations[['station_id', 'station_name', 'lat', 'lon', 'num_shop', 'top10_avarage_score']]
+        station_id_names = df_stations.set_index("station_id")['station_name'].to_dict()
         stations['distance'] = ds
         results = []
         for _, row in stations.sort_values('distance').head(10).iterrows():
@@ -73,8 +83,8 @@ class Election:
             result = dict(candidate_station=row.drop("distance").to_dict())
             for station_id in station_ids:
                 staion_times = [self._partial_get_time(station_id, candidate_station_id) for station_id in station_ids]
-                result['staion_times'] = [dict(station_id=t[0], time=t[1]) for t in staion_times]
-                times = [r['time'] for r in result['staion_times']]
+                result['station_times'] = [dict(station_id=t[0], station_name=station_id_names[t[0]], time=t[1]) for t in staion_times]
+                times = [r['time'] for r in result['station_times']]
                 sum_ = sum(times)
                 diff = max(times) - min(times)
                 result['indicater'] = sum_ + diff
