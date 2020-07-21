@@ -68,6 +68,8 @@ class Election:
 
         df_stations = read_frame(Station.objects.all())
         candidate_stations = df_stations.query("station_id in @station_ids")
+        print(station_ids)
+        print(candidate_stations)
         halfway_coords = candidate_stations['lat'].mean(), candidate_stations['lon'].mean()
         ds = []
         for coords in df_stations[['lat', 'lon']].values:
